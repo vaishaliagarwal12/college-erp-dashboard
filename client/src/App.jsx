@@ -1,42 +1,46 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
-import ProtectedRoute from './components/ProtectedRoute'
-import MainLayout from './layouts/MainLayout'
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
+import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "./context/useAuth";
+import { ROLES } from "./utils/permissions";
 
 // Auth pages
-import Login from './pages/Login/Login'
-import ForgotPassword from './pages/ForgotPassword/ForgotPassword'
-import ResetPassword from './pages/ResetPassword/ResetPassword'
-import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
-import ChangePassword from './pages/ChangePassword/ChangePassword'
-import Unauthorized from './pages/unauthorized/Unauthorized'
+import Login from "./pages/Login/Login";
+import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
+import ChangePassword from "./pages/ChangePassword/ChangePassword";
+import Unauthorized from "./pages/unauthorized/Unauthorized";
 
 // Dashboard
-import Dashboard from './pages/Dashboard/Dashboard'
+import Dashboard from "./pages/Dashboard/Dashboard";
 
 // CRUD modules (Standardized PascalCase paths)
-import Students from './pages/Students/Students'
-import AddStudent from './pages/Students/AddStudent'
-import EditStudent from './pages/Students/EditStudent'
-import StudentDetails from './pages/Students/StudentDetails'
+import Students from "./pages/Students/Students";
+import AddStudent from "./pages/Students/AddStudent";
+import EditStudent from "./pages/Students/EditStudent";
+import StudentDetails from "./pages/Students/StudentDetails";
 
-import Faculty from './pages/Faculty/Faculty'
-import AddFaculty from './pages/Faculty/AddFaculty'
-import EditFaculty from './pages/Faculty/EditFaculty'
-import FacultyDetails from './pages/Faculty/FacultyDetails'
+import Faculty from "./pages/Faculty/Faculty";
+import AddFaculty from "./pages/Faculty/AddFaculty";
+import EditFaculty from "./pages/Faculty/EditFaculty";
+import FacultyDetails from "./pages/Faculty/FacultyDetails";
 
-import Departments from './pages/Departments/Departments'
-import AddDepartment from './pages/Departments/AddDepartment'
-import EditDepartment from './pages/Departments/EditDepartment'
-import DepartmentDetails from './pages/Departments/DepartmentDetails'
+import Departments from "./pages/Departments/Departments";
+import AddDepartment from "./pages/Departments/AddDepartment";
+import EditDepartment from "./pages/Departments/EditDepartment";
+import DepartmentDetails from "./pages/Departments/DepartmentDetails";
 
-import Courses from "./pages/courses/Courses";
-import AddCourse from "./pages/courses/AddCourse";
-import EditCourse from "./pages/courses/EditCourse";
-import CourseDetails from "./pages/courses/CourseDetails";
+import Courses from "./pages/Courses/Courses";
+import AddCourse from "./pages/Courses/AddCourse";
+import EditCourse from "./pages/Courses/EditCourse";
+import CourseDetails from "./pages/Courses/CourseDetails";
 
-import Timetable from "./pages/timetable/Timetable";
+import Timetable from "./pages/Timetable/Timetable";
 import Reports from "./pages/reports/Reports";
+import Settings from "./pages/Settings/Settings";
 
 function GuestRedirect({ to }) {
   const location = useLocation();
@@ -45,21 +49,30 @@ function GuestRedirect({ to }) {
 
 function AuthLoading() {
   return (
-    <>
-      <Routes>
-        {/* Public auth routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
+      <div className="flex flex-col items-center gap-3">
+        <span className="spinner" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Loading your workspace…
+        </p>
+      </div>
+    </div>
+  );
+}
 
-        {/* Protected routes inside MainLayout */}
+function AdminApp() {
+  const adminOnly = [ROLES.ADMIN];
+
+  return (
+    <MainLayout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
         <Route
-          path="/"
+          path="/dashboard"
           element={
-            <ProtectedRoute>
-              <MainLayout />
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -99,7 +112,7 @@ function AuthLoading() {
             </ProtectedRoute>
           }
         />
-        {/* Faculty Routes */}
+
         <Route
           path="/faculty"
           element={
@@ -226,11 +239,49 @@ function AuthLoading() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-      <Toaster position="top-right" />
-    </>
-  )
+    </MainLayout>
+  );
 }
 
-export default App
+function App() {
+  const { token, isInitializing } = useAuth();
+
+  if (isInitializing) {
+    return <AuthLoading />;
+  }
+
+  if (!token) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="*" element={<GuestRedirect to="/login" />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <>
+      <AdminApp />
+      <Toaster position="top-right" />
+    </>
+  );
+}
+
+export default App;

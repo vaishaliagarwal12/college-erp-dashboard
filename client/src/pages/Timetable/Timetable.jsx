@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaCalendarAlt, FaRedo } from "react-icons/fa";
+import { MdDownload, MdAdd, MdRedo } from "react-icons/md";
 import TimetableFilters from "../../components/timetable/TimetableFilters";
 import TimetableGrid from "../../components/timetable/TimetableGrid";
 import TimetableCards from "../../components/timetable/TimetableCards";
@@ -25,8 +25,7 @@ function Timetable() {
 
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
-  const [sectionFilter, setSectionFilter] = useState("");
-  const [facultyFilter, setFacultyFilter] = useState("");
+  const [roomFilter, setRoomFilter] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("view");
@@ -46,15 +45,9 @@ function Timetable() {
     const matchesSemester =
       semesterFilter === "" || entry.semester === Number(semesterFilter);
 
-    const matchesSection =
-      sectionFilter === "" || entry.section === sectionFilter;
+    const matchesRoom = roomFilter === "" || entry.room === roomFilter;
 
-    const matchesFaculty =
-      facultyFilter === "" || entry.faculty === facultyFilter;
-
-    return (
-      matchesDepartment && matchesSemester && matchesSection && matchesFaculty
-    );
+    return matchesDepartment && matchesSemester && matchesRoom;
   });
 
   const openView = (entry) => {
@@ -86,9 +79,7 @@ function Timetable() {
         const res = await api.put(`/timetable/${data._id}`, payload);
         const updated = normalizeEntry(res.data?.data || payload);
         setEntries((prev) =>
-          prev.map((entry) =>
-            entry._id === updated._id ? updated : entry
-          )
+          prev.map((entry) => (entry._id === updated._id ? updated : entry))
         );
       } else {
         const res = await api.post("/timetable", payload);
@@ -149,33 +140,47 @@ function Timetable() {
     };
   }, [reloadKey]);
 
-  return (
-    <div className="page">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Timetable</h1>
-          <p className="page-subtitle">
-            Weekly schedule for all classes and sections.
-          </p>
+  const handleExport = () => {
+    window.print();
+  };
 
-          <span className="badge-neutral mt-3">
-            <FaCalendarAlt />
-            Academic Year 2025-26
-          </span>
+  return (
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-display-lg text-display-lg text-primary tracking-tight">
+            Class Schedule
+          </h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+            Manage and view weekly academic timetables.
+          </p>
         </div>
 
-        {isAdmin && (
-          <button onClick={openAdd} className="btn-primary">
-            <FaPlus />
-            Add Class
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 rounded-lg border border-outline bg-surface-container-lowest px-4 py-2 font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-low"
+          >
+            <MdDownload className="text-[18px]" />
+            Export PDF
           </button>
-        )}
+
+          {isAdmin && (
+            <button
+              onClick={openAdd}
+              className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 font-label-md text-label-md text-on-secondary shadow-sm transition-colors hover:bg-secondary-container"
+            >
+              <MdAdd className="text-[18px]" />
+              Create Schedule
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}
       {loading ? (
-        <div className="card">
+        <div className="rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-card dark:border-primary-container dark:bg-primary">
           <div className="flex min-h-[280px] flex-col items-center justify-center gap-3">
             <span className="spinner" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -184,11 +189,11 @@ function Timetable() {
           </div>
         </div>
       ) : error && entries.length === 0 ? (
-        <div className="card">
+        <div className="rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-card dark:border-primary-container dark:bg-primary">
           <EmptyState message="Could not load timetable" hint={error} />
           <div className="flex justify-center pb-6">
             <button onClick={retryLoad} className="btn-secondary">
-              <FaRedo />
+              <MdRedo />
               Retry
             </button>
           </div>
@@ -201,14 +206,12 @@ function Timetable() {
             setDepartmentFilter={setDepartmentFilter}
             semesterFilter={semesterFilter}
             setSemesterFilter={setSemesterFilter}
-            sectionFilter={sectionFilter}
-            setSectionFilter={setSectionFilter}
-            facultyFilter={facultyFilter}
-            setFacultyFilter={setFacultyFilter}
+            roomFilter={roomFilter}
+            setRoomFilter={setRoomFilter}
           />
 
           {filteredEntries.length === 0 ? (
-            <div className="table-card">
+            <div className="rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-card dark:border-primary-container dark:bg-primary">
               <EmptyState
                 message={
                   entries.length === 0
