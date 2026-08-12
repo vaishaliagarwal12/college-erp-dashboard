@@ -1,0 +1,4 @@
+◇ injected env (8) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+🚀 Server running on port 5000
+✅ MongoDB Connected: ac-vhqttv6-shard-00-00.mz9bos4.mongodb.net
