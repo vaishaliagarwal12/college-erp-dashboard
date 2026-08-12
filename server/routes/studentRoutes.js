@@ -1,9 +1,7 @@
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
 const express = require("express");
-
+const { protect, requirePermission } = require("../middleware/auth");
+const validate = require("../middleware/validate");
+const audit = require("../middleware/audit");
 const {
   getStudents,
   getStudentById,
@@ -11,27 +9,39 @@ const {
   updateStudent,
   deleteStudent,
 } = require("../controllers/studentController");
+const {
+  createStudentSchema,
+  updateStudentSchema,
+} = require("../validators/studentValidator");
 
 const router = express.Router();
 
-// GET all students
-router.get("/", getStudents);
+router.use(protect);
 
-// GET student by ID
+// Read: all authenticated roles
+router.get("/", getStudents);
 router.get("/:id", getStudentById);
 
-// POST create student
+// Write: data-driven permission map
 router.post(
   "/",
-  protect,
-  authorize("Admin"),
+  requirePermission("students", "write"),
+  validate(createStudentSchema),
+  audit("students", "create", "Student"),
   createStudent
 );
-
-// PUT update student
-router.put("/:id", updateStudent);
-
-// DELETE student
-router.delete("/:id", deleteStudent);
+router.put(
+  "/:id",
+  requirePermission("students", "write"),
+  validate(updateStudentSchema),
+  audit("students", "update", "Student"),
+  updateStudent
+);
+router.delete(
+  "/:id",
+  requirePermission("students", "delete"),
+  audit("students", "delete", "Student"),
+  deleteStudent
+);
 
 module.exports = router;

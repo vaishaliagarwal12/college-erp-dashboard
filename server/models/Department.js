@@ -5,15 +5,15 @@ const departmentSchema = new mongoose.Schema(
     departmentName: {
       type: String,
       required: true,
-      unique: true,
+      index: true,
       trim: true,
     },
 
     departmentCode: {
       type: String,
       required: true,
-      unique: true,
       uppercase: true,
+      index: true,
       trim: true,
     },
 
@@ -22,14 +22,11 @@ const departmentSchema = new mongoose.Schema(
       required: true,
     },
 
-    totalFaculty: {
-      type: Number,
-      default: 0,
-    },
-
-    totalStudents: {
-      type: Number,
-      default: 0,
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tenant",
+      index: true,
+      default: null,
     },
 
     status: {
@@ -42,5 +39,8 @@ const departmentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+departmentSchema.index({ tenantId: 1, departmentName: 1 }, { unique: true });
+departmentSchema.index({ tenantId: 1, departmentCode: 1 }, { unique: true });
 
 module.exports = mongoose.model("Department", departmentSchema);

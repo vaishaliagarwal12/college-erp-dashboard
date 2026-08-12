@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 
 const facultySchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true,
+    },
+
     firstName: {
       type: String,
       required: true,
@@ -21,14 +29,6 @@ const facultySchema = new mongoose.Schema(
       trim: true,
     },
 
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-
     phone: {
       type: String,
       required: true,
@@ -41,8 +41,10 @@ const facultySchema = new mongoose.Schema(
     },
 
     department: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
       required: true,
+      index: true,
     },
 
     designation: {
@@ -64,6 +66,7 @@ const facultySchema = new mongoose.Schema(
       type: String,
       enum: ["Active", "Inactive"],
       default: "Active",
+      index: true,
     },
   },
   {

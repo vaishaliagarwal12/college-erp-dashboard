@@ -1,12 +1,13 @@
-import { useState } from "react";
-import Sidebar from "../components/layout/Sidebar";
-import Navbar from "../components/layout/Navbar";
+import { useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import Sidebar from '../components/layout/Sidebar'
+import Navbar from '../components/layout/Navbar'
 
 function MainLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const closeSidebar = () => setSidebarOpen(false);
-  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false)
+  const openSidebar = () => setSidebarOpen(true)
 
   return (
     <div className="flex min-h-screen">
@@ -25,11 +26,11 @@ function MainLayout({ children }) {
         <Navbar onMenuClick={openSidebar} />
 
         <main className="bg-gray-50 min-h-screen dark:bg-gray-950">
-          {children}
+          {children || <Outlet />}
         </main>
       </div>
     </div>
-  );
+  )
 }
 
-export default MainLayout;
+export default MainLayout

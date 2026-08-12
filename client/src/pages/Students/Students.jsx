@@ -117,59 +117,45 @@ function Students() {
 
   const handleDelete = async (student) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${student.name} (${student.rollNo})?`
+      `Are you sure you want to delete ${student.name}? This action cannot be undone.`
     );
     if (!confirmed) return;
 
     try {
-      await api.delete(`/students/${student._id}`);
-      setStudentList((prev) => prev.filter((s) => s._id !== student._id));
+      await api.delete(`/students/${student._id || student.id}`);
+      setStudentList((prev) =>
+        prev.filter((s) => (s._id || s.id) !== (student._id || student.id))
+      );
     } catch (err) {
-      window.alert(getErrorMessage(err, "Failed to delete student."));
+      alert(getErrorMessage(err, "Failed to delete student."));
     }
   };
 
   const handleExport = () => {
-    const headers = [
-      "Name",
-      "Roll No",
-      "Email",
-      "Phone",
-      "Course",
-      "Department",
-      "Batch",
-      "Semester",
-      "Section",
-      "Status",
+    const rows = [
+      ["Name", "Roll Number", "Department", "Semester", "Batch", "Status"],
+      ...filteredStudents.map((s) => [
+        s.name,
+        s.rollNo,
+        s.department || s.course || "",
+        s.semester,
+        s.batch,
+        s.status || "Active",
+      ]),
     ];
-    const rows = filteredStudents.map((s) => [
-      s.name,
-      s.rollNo,
-      s.email,
-      s.phone,
-      s.course,
-      s.department,
-      s.batch,
-      s.semester,
-      s.section,
-      s.status,
-    ]);
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((e) => e.map((c) => `"${c}"`).join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = "students.csv";
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `students_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
   };
 
-  const hasFilters =
-    searchTerm !== "" || departmentFilter !== "" || yearFilter !== "";
+  const hasFilters = Boolean(searchTerm || departmentFilter || yearFilter);
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4 sm:p-6 lg:p-8">
@@ -179,27 +165,28 @@ function Students() {
           <h2 className="text-[32px] font-bold leading-10 tracking-tight text-primary dark:text-white">
             Students
           </h2>
-          <p className="mt-1 text-sm text-on-surface-variant dark:text-gray-400">
-            Manage enrollments, statuses, and student records.
+          <p className="mt-1 text-on-surface-variant dark:text-gray-400">
+            Manage student records, enrollment status, and academic details.
           </p>
         </div>
 
-        <div className="flex w-full items-center gap-4 sm:w-auto">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleExport}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2 text-xs font-semibold text-on-surface-variant shadow-sm transition-colors hover:bg-surface-container-low dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 sm:flex-none"
+            className="btn-secondary"
+            title="Export filtered students as CSV"
           >
-            <MdDownload className="text-[18px]" />
+            <MdDownload className="text-lg" />
             Export CSV
           </button>
 
           {isAdmin && (
             <button
               onClick={() => navigate("/students/add")}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-secondary px-4 py-2 text-xs font-semibold text-on-secondary shadow-sm transition-colors hover:bg-secondary-container active:scale-[0.98] sm:flex-none"
+              className="btn-primary"
             >
-              <MdPersonAdd className="text-[18px]" />
-              Add New Student
+              <MdPersonAdd className="text-lg" />
+              Add Student
             </button>
           )}
         </div>

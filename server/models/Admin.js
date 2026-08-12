@@ -14,21 +14,21 @@ const adminSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
+      trim: true,
     },
 
     password: {
       type: String,
       required: true,
-      minlength: 6,
+      minlength: 8,
       select: false,
     },
 
     role: {
-  type: String,
-  enum: ["Admin", "Faculty", "Student"],
-  default: "Admin",
-},
-
+      type: String,
+      enum: ["Admin", "Faculty", "Student"],
+      default: "Admin",
+    },
   },
   {
     timestamps: true,

@@ -1,0 +1,818 @@
+openapi: 3.0.3
+info:
+  title: College ERP API
+  version: 1.0.0
+  description: Backend API for the College ERP dashboard (students, academic modules, finance, notifications).
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local development server
+
+tags:
+  - name: Auth
+  - name: Students
+  - name: Attendance
+  - name: Exams
+  - name: Results
+  - name: Timetable
+  - name: Fees
+  - name: Notifications
+  - name: Files
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        rollNumber:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        department:
+          type: object
+          nullable: true
+        course:
+          type: object
+          nullable: true
+        semester:
+          type: integer
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+        student:
+          type: object
+          nullable: true
+        course:
+          type: object
+          nullable: true
+        date:
+          type: string
+          format: date
+        period:
+          type: string
+        status:
+          type: string
+          enum: [Present, Absent, Late, "On Leave"]
+    Exam:
+      type: object
+      properties:
+        id:
+          type: string
+        examName:
+          type: string
+        examType:
+          type: string
+        course:
+          type: object
+          nullable: true
+        semester:
+          type: integer
+        date:
+          type: string
+          format: date
+        maxMarks:
+          type: number
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+        student:
+          type: object
+          nullable: true
+        course:
+          type: object
+          nullable: true
+        examType:
+          type: string
+        semester:
+          type: integer
+        score:
+          type: number
+        grade:
+          type: string
+    Timetable:
+      type: object
+      properties:
+        id:
+          type: string
+        dayOfWeek:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        course:
+          type: object
+          nullable: true
+        faculty:
+          type: object
+          nullable: true
+        room:
+          type: string
+        semester:
+          type: integer
+        section:
+          type: string
+    Fee:
+      type: object
+      properties:
+        id:
+          type: string
+        student:
+          type: object
+          nullable: true
+        semester:
+          type: integer
+        totalAmount:
+          type: number
+        amountPaid:
+          type: number
+        balance:
+          type: number
+        status:
+          type: string
+          enum: [Unpaid, "Partially Paid", Paid, Overdue]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [Info, Success, Warning, Alert]
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Successful login, returns access + refresh tokens
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: New access token issued
+
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Start Google OAuth login flow (302 to Google consent screen)
+      security: []
+      responses:
+        "302":
+          description: Redirect to Google consent screen
+        "503":
+          description: Google SSO is not configured
+
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Google OAuth callback - exchanges code and issues tokens
+      security: []
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful login, returns access + refresh tokens
+        "302":
+          description: Browser request redirected to the client with tokens in the URL
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: Failed to exchange the authorization code
+
+  /students:
+    get:
+      tags: [Students]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: semester
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paginated student list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Student"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Students]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, rollNumber, email]
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                rollNumber:
+                  type: string
+                email:
+                  type: string
+                department:
+                  type: string
+                course:
+                  type: string
+                semester:
+                  type: integer
+      responses:
+        "201":
+          description: Student created
+        "409":
+          description: Duplicate roll number or email
+  /students/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Students]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Student detail
+        "404":
+          description: Student not found
+    put:
+      tags: [Students]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Student updated
+    delete:
+      tags: [Students]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Student deleted
+
+  /attendance:
+    get:
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Attendance list
+    post:
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student, course, date, status]
+              properties:
+                student:
+                  type: string
+                course:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                period:
+                  type: string
+                status:
+                  type: string
+                  enum: [Present, Absent, Late, "On Leave"]
+      responses:
+        "201":
+          description: Attendance marked
+        "409":
+          description: Duplicate marking for student/course/day/period
+  /attendance/bulk:
+    post:
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [records]
+              properties:
+                records:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Attendance"
+      responses:
+        "201":
+          description: Records upserted
+  /attendance/summary:
+    get:
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Per-student attendance percentages
+
+  /exams:
+    get:
+      tags: [Exams]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Exam list
+    post:
+      tags: [Exams]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Exam created
+  /exams/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Exams]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Exam detail
+    put:
+      tags: [Exams]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Exam updated
+    delete:
+      tags: [Exams]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Exam deleted
+
+  /results:
+    get:
+      tags: [Results]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Result list
+    post:
+      tags: [Results]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Result recorded
+  /results/transcript/{studentId}:
+    get:
+      tags: [Results]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student transcript
+
+  /timetable:
+    get:
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Timetable slots
+    post:
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Slot created
+        "409":
+          description: Scheduling conflict (room/faculty/section)
+  /timetable/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Slot detail
+    put:
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Slot updated
+    delete:
+      tags: [Timetable]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Slot deleted
+
+  /fees:
+    get:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fee records
+    post:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student, semester, items]
+              properties:
+                student:
+                  type: string
+                semester:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemName:
+                        type: string
+                      amount:
+                        type: number
+                dueDate:
+                  type: string
+                  format: date
+      responses:
+        "201":
+          description: Fee record created
+        "409":
+          description: Duplicate fee record for student/semester
+  /fees/summary:
+    get:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Collected / outstanding totals
+  /fees/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fee record detail
+    put:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fee record updated
+    delete:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fee record deleted
+  /fees/{id}/pay:
+    post:
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, method]
+              properties:
+                amount:
+                  type: number
+                method:
+                  type: string
+                  enum: [Cash, Card, "Bank Transfer", UPI, Cheque]
+                reference:
+                  type: string
+      responses:
+        "200":
+          description: Payment recorded, receipt returned
+        "400":
+          description: Payment exceeds outstanding balance
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user's notifications
+    post:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient, title]
+              properties:
+                recipient:
+                  type: string
+                title:
+                  type: string
+                message:
+                  type: string
+                type:
+                  type: string
+                  enum: [Info, Success, Warning, Alert]
+      responses:
+        "201":
+          description: Notification created
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unread notification count
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked as read
+  /notifications/{id}/read:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    patch:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notification marked as read
+  /notifications/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    delete:
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notification deleted
+
+  /files:
+    get:
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: File list
+  /files/upload:
+    post:
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: File uploaded to GridFS
+  /files/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: File stream or metadata
+    delete:
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: File deleted
+
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard statistics
+
+  /dashboard/analytics:
+    get:
+      tags: [Dashboard]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Aggregated analytics (attendance trend, fee collection trend, exam performance, grade distribution, students by department)
+
+

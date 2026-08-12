@@ -1,5 +1,7 @@
 const express = require("express");
-
+const { protect, requirePermission } = require("../middleware/auth");
+const validate = require("../middleware/validate");
+const audit = require("../middleware/audit");
 const {
   getFaculty,
   getFacultyById,
@@ -7,22 +9,39 @@ const {
   updateFaculty,
   deleteFaculty,
 } = require("../controllers/facultyController");
+const {
+  createFacultySchema,
+  updateFacultySchema,
+} = require("../validators/facultyValidator");
 
 const router = express.Router();
 
-// Get All Faculty
-router.get("/", getFaculty);
+router.use(protect);
 
-// Get Faculty By ID
+// Read: all authenticated roles
+router.get("/", getFaculty);
 router.get("/:id", getFacultyById);
 
-// Create Faculty
-router.post("/", createFaculty);
-
-// Update Faculty
-router.put("/:id", updateFaculty);
-
-// Delete Faculty
-router.delete("/:id", deleteFaculty);
+// Write: data-driven permission map
+router.post(
+  "/",
+  requirePermission("faculty", "write"),
+  validate(createFacultySchema),
+  audit("faculty", "create", "Faculty"),
+  createFaculty
+);
+router.put(
+  "/:id",
+  requirePermission("faculty", "write"),
+  validate(updateFacultySchema),
+  audit("faculty", "update", "Faculty"),
+  updateFaculty
+);
+router.delete(
+  "/:id",
+  requirePermission("faculty", "delete"),
+  audit("faculty", "delete", "Faculty"),
+  deleteFaculty
+);
 
 module.exports = router;
