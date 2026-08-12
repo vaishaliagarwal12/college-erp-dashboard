@@ -1,5 +1,18 @@
-import { useEffect, useState } from "react";
-import { ThemeContext } from "./theme-context";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState } from "react";
+
+export const ThemeContext = createContext({
+  darkMode: false,
+  toggleTheme: () => {},
+});
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+}
 
 function getInitialMode() {
   try {
@@ -9,7 +22,10 @@ function getInitialMode() {
   } catch {
     /* localStorage unavailable */
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  return false;
 }
 
 export function ThemeProvider({ children }) {
@@ -44,3 +60,5 @@ export function ThemeProvider({ children }) {
     </ThemeContext.Provider>
   );
 }
+
+export default ThemeProvider;

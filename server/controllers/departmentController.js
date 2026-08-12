@@ -1,120 +1,152 @@
 const Department = require("../models/Department");
+const Student = require("../models/Student");
+const Faculty = require("../models/Faculty");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
+const getPagination = require("../utils/pagination");
+const escapeRegex = require("../utils/escapeRegex");
+const { tenantScope, tenantCreate } = require("../utils/tenantScope");
 
-// Get All
-const getDepartments = async (req, res) => {
-  try {
-    const departments = await Department.find();
+const countMap = (rows) =>
+  rows.reduce((acc, row) => {
+    acc[String(row._id)] = row.count;
+    return acc;
+  }, {});
 
-    res.status(200).json({
-      success: true,
-      count: departments.length,
-      data: departments,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+const serializeDepartment = (department, studentCount = 0, facultyCount = 0) => ({
+  id: department._id,
+  departmentName: department.departmentName,
+  departmentCode: department.departmentCode,
+  hod: department.hod,
+  studentCount,
+  facultyCount,
+  status: department.status,
+  createdAt: department.createdAt,
+  updatedAt: department.updatedAt,
+});
+
+// Fetch live counts instead of denormalized counters
+const getCounts = async (departmentIds) => {
+  const ids = departmentIds.map((id) => id);
+  const [studentRows, facultyRows] = await Promise.all([
+    Student.aggregate([
+      { $match: { department: { $in: ids } } },
+      { $group: { _id: "$department", count: { $sum: 1 } } },
+    ]),
+    Faculty.aggregate([
+      { $match: { department: { $in: ids } } },
+      { $group: { _id: "$department", count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  return {
+    students: countMap(studentRows),
+    faculty: countMap(facultyRows),
+  };
 };
 
-// Get By ID
-const getDepartmentById = async (req, res) => {
-  try {
-    const department = await Department.findById(req.params.id);
+// Get All Departments (search, filter, pagination)
+const getDepartments = asyncHandler(async (req, res) => {
+  const { search = "", status } = req.query;
+  const { page, limit, skip } = getPagination(req.query);
 
-    if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: "Department not found",
-      });
+  const query = { ...tenantScope(req) };
+
+  if (search) {
+    const regex = new RegExp(escapeRegex(search), "i");
+    query.$or = [{ departmentName: regex }, { departmentCode: regex }, { hod: regex }];
+  }
+
+  if (status) query.status = status;
+
+  const [total, departments] = await Promise.all([
+    Department.countDocuments(query),
+    Department.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+  ]);
+
+  const counts = await getCounts(departments.map((d) => d._id));
+
+  res.status(200).json({
+    success: true,
+    count: departments.length,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+    data: departments.map((d) =>
+      serializeDepartment(d, counts.students[String(d._id)] || 0, counts.faculty[String(d._id)] || 0)
+    ),
+  });
+});
+
+// Get Department By ID
+const getDepartmentById = asyncHandler(async (req, res) => {
+  const department = await Department.findOne({ _id: req.params.id, ...tenantScope(req) });
+
+  if (!department) {
+    throw new AppError("Department not found", 404);
+  }
+
+  const counts = await getCounts([department._id]);
+
+  res.status(200).json({
+    success: true,
+    data: serializeDepartment(
+      department,
+      counts.students[String(department._id)] || 0,
+      counts.faculty[String(department._id)] || 0
+    ),
+  });
+});
+
+// Create Department
+const createDepartment = asyncHandler(async (req, res) => {
+  const department = await Department.create({ ...req.body, ...tenantCreate(req) });
+
+  res.status(201).json({
+    success: true,
+    message: "Department created successfully",
+    data: serializeDepartment(department),
+  });
+});
+
+// Update Department
+const updateDepartment = asyncHandler(async (req, res) => {
+  const department = await Department.findOneAndUpdate(
+    { _id: req.params.id, ...tenantScope(req) },
+    req.body,
+    {
+      returnDocument: "after",
+      runValidators: true,
     }
+  );
 
-    res.status(200).json({
-      success: true,
-      data: department,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!department) {
+    throw new AppError("Department not found", 404);
   }
-};
 
-// Create
-const createDepartment = async (req, res) => {
-  try {
-    const department = await Department.create(req.body);
+  res.status(200).json({
+    success: true,
+    message: "Department updated successfully",
+    data: serializeDepartment(department),
+  });
+});
 
-    res.status(201).json({
-      success: true,
-      message: "Department created successfully",
-      data: department,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+// Delete Department
+const deleteDepartment = asyncHandler(async (req, res) => {
+  const department = await Department.findOneAndDelete({ _id: req.params.id, ...tenantScope(req) });
+
+  if (!department) {
+    throw new AppError("Department not found", 404);
   }
-};
 
-// Update
-const updateDepartment = async (req, res) => {
-  try {
-    const department = await Department.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: "Department not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Department updated successfully",
-      data: department,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// Delete
-const deleteDepartment = async (req, res) => {
-  try {
-    const department = await Department.findByIdAndDelete(req.params.id);
-
-    if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: "Department not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Department deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Department deleted successfully",
+  });
+});
 
 module.exports = {
   getDepartments,

@@ -19,3 +19,6 @@ npm-debug.log*
 
 # Windows
 Thumbs.db
+
+# Generated reports
+server/exports/

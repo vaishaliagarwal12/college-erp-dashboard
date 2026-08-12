@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true,
+    },
+
     firstName: {
       type: String,
       required: true,
@@ -21,14 +29,6 @@ const studentSchema = new mongoose.Schema(
       trim: true,
     },
 
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-
     phone: {
       type: String,
       required: true,
@@ -41,18 +41,23 @@ const studentSchema = new mongoose.Schema(
     },
 
     course: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
       required: true,
+      index: true,
     },
 
     department: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
       required: true,
+      index: true,
     },
 
     semester: {
       type: Number,
       required: true,
+      index: true,
     },
 
     batch: {
@@ -73,6 +78,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       enum: ["Active", "Inactive"],
       default: "Active",
+      index: true,
     },
   },
   {
