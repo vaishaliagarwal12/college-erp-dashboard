@@ -6,6 +6,7 @@ import {
   FaBuilding,
   FaBook,
   FaCalendarAlt,
+  FaFileAlt,
   FaUniversity,
   FaTimes,
   FaChevronLeft,
@@ -46,6 +47,12 @@ const menuItems = [
     name: "Timetable",
     path: "/timetable",
     icon: <FaCalendarAlt />,
+    roles: [ROLES.ADMIN],
+  },
+  {
+    name: "Reports",
+    path: "/reports",
+    icon: <FaFileAlt />,
     roles: [ROLES.ADMIN],
   },
 ];

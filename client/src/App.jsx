@@ -28,6 +28,7 @@ import EditCourse from "./pages/courses/EditCourse";
 import CourseDetails from "./pages/courses/CourseDetails";
 
 import Timetable from "./pages/timetable/Timetable";
+import Reports from "./pages/reports/Reports";
 
 function GuestRedirect({ to }) {
   const location = useLocation();
@@ -224,6 +225,15 @@ function ProtectedApp() {
           element={
             <ProtectedRoute allowedRoles={adminOnly}>
               <Timetable />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Reports />
             </ProtectedRoute>
           }
         />
