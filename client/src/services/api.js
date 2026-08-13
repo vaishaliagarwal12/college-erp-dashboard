@@ -3,7 +3,9 @@ import axios from "axios";
 const API_TIMEOUT_MS = 15000;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
+  // Relative "/api/v1" works through the Vite dev proxy and the nginx container.
+  // Set VITE_API_URL when the client must talk to a standalone backend.
+  baseURL: import.meta.env.VITE_API_URL || "/api/v1",
   headers: { "Content-Type": "application/json" },
   timeout: API_TIMEOUT_MS,
 });
@@ -45,8 +47,22 @@ export function getErrorMessage(error, fallback = "Something went wrong. Please 
   return fallback;
 }
 
+// Reads the current access token. "erp_token" is the primary key; "token"
+// is kept for legacy sessions created by the older client.
+function getAccessToken() {
+  try {
+    return (
+      localStorage.getItem("erp_token") ||
+      localStorage.getItem("token") ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -73,6 +89,8 @@ api.interceptors.response.use(
         unauthorizedHandler();
       } else {
         try {
+          localStorage.removeItem("erp_token");
+          localStorage.removeItem("erp_user");
           localStorage.removeItem("token");
           localStorage.removeItem("user");
         } catch {

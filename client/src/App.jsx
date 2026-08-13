@@ -42,6 +42,19 @@ import Timetable from "./pages/Timetable/Timetable";
 import Reports from "./pages/reports/Reports";
 import Settings from "./pages/Settings/Settings";
 
+// Feature modules
+import Analytics from "./pages/Analytics/Analytics";
+import Attendance from "./pages/Attendance/Attendance";
+import Exams from "./pages/Exams/Exams";
+import Results from "./pages/Results/Results";
+import Fees from "./pages/Fees/Fees";
+import Files from "./pages/Files/Files";
+import Notifications from "./pages/Notifications/Notifications";
+import Admissions from "./pages/Admissions/Admissions";
+import Curriculum from "./pages/Curriculum/Curriculum";
+import Workload from "./pages/Workload/Workload";
+import Jobs from "./pages/Jobs/Jobs";
+
 function GuestRedirect({ to }) {
   const location = useLocation();
   return <Navigate to={to} replace state={{ from: location }} />;
@@ -244,6 +257,105 @@ function AdminApp() {
           element={
             <ProtectedRoute allowedRoles={adminOnly}>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Attendance />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exams"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Exams />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/results"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Results />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fees"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Fees />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/files"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Files />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admissions"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Admissions />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/curriculum"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Curriculum />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/workload"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Workload />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <Jobs />
             </ProtectedRoute>
           }
         />

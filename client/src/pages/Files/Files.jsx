@@ -36,7 +36,8 @@ function Files() {
     const file = fileInputRef.current?.files?.[0]
     if (!file) return
     const formData = new FormData()
-    formData.append('file', file)
+    // The server reads the 'files' field (multer upload.array('files', 5)).
+    formData.append('files', file)
     uploadMutation.mutate(formData)
   }
 
@@ -81,7 +82,7 @@ function Files() {
                 <tr key={f.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-2">{f.originalName || f.filename || '—'}</td>
                   <td className="px-4 py-2">
-                    {f.size ? `${(f.size / 1024).toFixed(1)} KB` : '—'}
+                    {(f.length || f.size) ? `${((f.length || f.size) / 1024).toFixed(1)} KB` : '—'}
                   </td>
                   <td className="px-4 py-2">{f.uploadedBy?.name || '—'}</td>
                   <td className="px-4 py-2 flex gap-3">

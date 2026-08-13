@@ -68,10 +68,6 @@ router.post(
   changePassword
 );
 
-// Authenticated
-router.get("/me", protect, me);
-router.post("/logout", protect, logout);
-
 // Admin only (seed the first admin via: npm run seed:admin)
 router.post(
   "/register",
