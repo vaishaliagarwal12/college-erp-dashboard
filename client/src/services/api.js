@@ -3,9 +3,13 @@ import axios from "axios";
 const API_TIMEOUT_MS = 15000;
 
 const api = axios.create({
-  // Relative "/api/v1" works through the Vite dev proxy and the nginx container.
-  // Set VITE_API_URL when the client must talk to a standalone backend.
-  baseURL: import.meta.env.VITE_API_URL || "/api/v1",
+  // Dev: relative "/api/v1" goes through the Vite dev proxy to the local backend.
+  // Prod (Vercel): default to the deployed backend on Render. Override with VITE_API_URL.
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.PROD
+      ? "https://college-erp-dashboard.onrender.com/api/v1"
+      : "/api/v1"),
   headers: { "Content-Type": "application/json" },
   timeout: API_TIMEOUT_MS,
 });

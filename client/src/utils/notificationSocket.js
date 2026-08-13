@@ -1,14 +1,14 @@
 import { io } from 'socket.io-client'
 
-// In dev, connect straight to the backend instead of hopping through Vite's
-// WebSocket proxy. The proxy tears connections down on page reload / dev-server
-// restart and spams `[vite] ws proxy error: write ECONNABORTED`; a direct
-// connection avoids the double-hop and survives Vite restarts.
-// In production the same-origin path is proxied by nginx (/socket.io).
+// In dev, connect straight to the local backend instead of hopping through
+// Vite's WebSocket proxy (which spams `write ECONNABORTED` on reload/restart).
+// In production (Vercel build), default to the deployed backend on Render.
 // Set VITE_SOCKET_URL to override (e.g. a remote or differently-pinned backend).
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '/')
+  (import.meta.env.DEV
+    ? 'http://localhost:5000'
+    : 'https://college-erp-dashboard.onrender.com')
 
 let socket = null
 
