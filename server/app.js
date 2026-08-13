@@ -32,6 +32,9 @@ const tenantMiddleware = require("./middleware/tenant");
 
 const app = express();
 
+// Trust first proxy (required for Render and other reverse-proxy hosts)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(
